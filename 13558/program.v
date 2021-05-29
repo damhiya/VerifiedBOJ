@@ -166,8 +166,8 @@ Definition f_flipped_inner_product := {|
                     (tptr tuint)) tuint))
               (Sset _sum
                 (Ebinop Oadd (Etempvar _sum tulong)
-                  (Ebinop Omul (Etempvar _t'1 tuint) (Etempvar _t'2 tuint)
-                    tuint) tulong)))))
+                  (Ebinop Omul (Ecast (Etempvar _t'1 tuint) tulong)
+                    (Ecast (Etempvar _t'2 tuint) tulong) tulong) tulong)))))
         (Sset _i
           (Ebinop Oadd (Etempvar _i tulong) (Econst_int (Int.repr 1) tint)
             tulong))))

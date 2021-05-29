@@ -1,11 +1,11 @@
 #include <stdio.h>
 #include <string.h>
 
-unsigned long long flipped_inner_product(unsigned int xs[], unsigned int ys[], size_t n) {
+unsigned long long flipped_inner_product(const unsigned int * const xs, const unsigned int * const ys, const size_t n) {
   unsigned long long sum = 0;
 
   for (size_t i = 0; i<n; i++)
-    sum += xs[i] * ys[n-i-1];
+    sum += (unsigned long long)xs[i] * (unsigned long long)ys[n-i-1];
 
   return sum;
 }
@@ -14,7 +14,7 @@ unsigned long long flipped_inner_product(unsigned int xs[], unsigned int ys[], s
 // 3 <= n <= 100 000
 // 0 <= i < j < k < n
 // 1 <= seq[i] <= 30 000
-unsigned long long solve(unsigned short seq[], size_t n) {
+unsigned long long solve(const unsigned short * const seq, const size_t n) {
   unsigned int counti[M];
   unsigned int countk[M];
 
