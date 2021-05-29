@@ -1,6 +1,15 @@
 #include <stdio.h>
 #include <string.h>
 
+unsigned long long flipped_inner_product(unsigned int xs[], unsigned int ys[], size_t n) {
+  unsigned long long sum = 0;
+
+  for (size_t i = 0; i<n; i++)
+    sum += xs[i] * ys[n-i-1];
+
+  return sum;
+}
+
 #define M 30000
 // 3 <= n <= 100 000
 // 0 <= i < j < k < n
@@ -18,29 +27,18 @@ unsigned long long solve(unsigned short seq[], size_t n) {
   unsigned long long result = 0;
   
   for (size_t j = 0; j<n; j++) {
-    unsigned short vi, vj, vk;
+    unsigned short vmin, vmax, vj;
     vj = seq[j];
 
     // forall vi, vk, vi + vk = 2*vj, num += counti[vi-1] * countk[vk-1]
     if (2*vj <= M) {
-      vi = 1;
-      vk = 2*vj-1;
-
-      while (vk >= 1) {
-        result += counti[vi-1] * countk[vk-1];
-        vi++;
-        vk--;
-      }
+      vmin = 1;
+      vmax = 2*vj-1;
     } else {
-      vi = 2*vj - M;
-      vk = M;
-
-      while (vi <= M) {
-        result += counti[vi-1] * countk[vk-1];
-        vi++;
-        vk--;
-      }
+      vmin = 2*vj - M;
+      vmax = M;
     }
+    result += flipped_inner_product(&counti[vmin-1], &countk[vmin-1], vmax-vmin+1);
     
     counti[seq[j]-1]++;
     countk[seq[j+1]-1]--;

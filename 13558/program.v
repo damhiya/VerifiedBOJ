@@ -77,6 +77,7 @@ Definition ___stringlit_2 : ident := $"__stringlit_2".
 Definition ___stringlit_3 : ident := $"__stringlit_3".
 Definition _counti : ident := $"counti".
 Definition _countk : ident := $"countk".
+Definition _flipped_inner_product : ident := $"flipped_inner_product".
 Definition _i : ident := $"i".
 Definition _j : ident := $"j".
 Definition _k : ident := $"k".
@@ -87,15 +88,15 @@ Definition _printf : ident := $"printf".
 Definition _result : ident := $"result".
 Definition _seq : ident := $"seq".
 Definition _solve : ident := $"solve".
-Definition _vi : ident := $"vi".
+Definition _sum : ident := $"sum".
 Definition _vj : ident := $"vj".
-Definition _vk : ident := $"vk".
+Definition _vmax : ident := $"vmax".
+Definition _vmin : ident := $"vmin".
+Definition _xs : ident := $"xs".
+Definition _ys : ident := $"ys".
 Definition _t'1 : ident := 128%positive.
 Definition _t'10 : ident := 137%positive.
 Definition _t'11 : ident := 138%positive.
-Definition _t'12 : ident := 139%positive.
-Definition _t'13 : ident := 140%positive.
-Definition _t'14 : ident := 141%positive.
 Definition _t'2 : ident := 129%positive.
 Definition _t'3 : ident := 130%positive.
 Definition _t'4 : ident := 131%positive.
@@ -130,6 +131,49 @@ Definition v___stringlit_3 := {|
   gvar_volatile := false
 |}.
 
+Definition f_flipped_inner_product := {|
+  fn_return := tulong;
+  fn_callconv := cc_default;
+  fn_params := ((_xs, (tptr tuint)) :: (_ys, (tptr tuint)) :: (_n, tulong) ::
+                nil);
+  fn_vars := nil;
+  fn_temps := ((_sum, tulong) :: (_i, tulong) :: (_t'2, tuint) ::
+               (_t'1, tuint) :: nil);
+  fn_body :=
+(Ssequence
+  (Sset _sum (Ecast (Econst_int (Int.repr 0) tint) tulong))
+  (Ssequence
+    (Ssequence
+      (Sset _i (Ecast (Econst_int (Int.repr 0) tint) tulong))
+      (Sloop
+        (Ssequence
+          (Sifthenelse (Ebinop Olt (Etempvar _i tulong) (Etempvar _n tulong)
+                         tint)
+            Sskip
+            Sbreak)
+          (Ssequence
+            (Sset _t'1
+              (Ederef
+                (Ebinop Oadd (Etempvar _xs (tptr tuint)) (Etempvar _i tulong)
+                  (tptr tuint)) tuint))
+            (Ssequence
+              (Sset _t'2
+                (Ederef
+                  (Ebinop Oadd (Etempvar _ys (tptr tuint))
+                    (Ebinop Osub
+                      (Ebinop Osub (Etempvar _n tulong) (Etempvar _i tulong)
+                        tulong) (Econst_int (Int.repr 1) tint) tulong)
+                    (tptr tuint)) tuint))
+              (Sset _sum
+                (Ebinop Oadd (Etempvar _sum tulong)
+                  (Ebinop Omul (Etempvar _t'1 tuint) (Etempvar _t'2 tuint)
+                    tuint) tulong)))))
+        (Sset _i
+          (Ebinop Oadd (Etempvar _i tulong) (Econst_int (Int.repr 1) tint)
+            tulong))))
+    (Sreturn (Some (Etempvar _sum tulong)))))
+|}.
+
 Definition f_solve := {|
   fn_return := tulong;
   fn_callconv := cc_default;
@@ -137,12 +181,11 @@ Definition f_solve := {|
   fn_vars := ((_counti, (tarray tuint 30000)) ::
               (_countk, (tarray tuint 30000)) :: nil);
   fn_temps := ((_k, tulong) :: (_result, tulong) :: (_j, tulong) ::
-               (_vi, tushort) :: (_vj, tushort) :: (_vk, tushort) ::
-               (_t'14, tuint) :: (_t'13, tushort) :: (_t'12, tushort) ::
-               (_t'11, tushort) :: (_t'10, tuint) :: (_t'9, tuint) ::
-               (_t'8, tuint) :: (_t'7, tuint) :: (_t'6, tuint) ::
-               (_t'5, tushort) :: (_t'4, tushort) :: (_t'3, tuint) ::
-               (_t'2, tushort) :: (_t'1, tushort) :: nil);
+               (_vmin, tushort) :: (_vmax, tushort) :: (_vj, tushort) ::
+               (_t'1, tulong) :: (_t'11, tuint) :: (_t'10, tushort) ::
+               (_t'9, tushort) :: (_t'8, tushort) :: (_t'7, tuint) ::
+               (_t'6, tushort) :: (_t'5, tushort) :: (_t'4, tuint) ::
+               (_t'3, tushort) :: (_t'2, tushort) :: nil);
   fn_body :=
 (Ssequence
   (Scall None
@@ -171,29 +214,29 @@ Definition f_solve := {|
               Sskip
               Sbreak)
             (Ssequence
-              (Sset _t'12
+              (Sset _t'9
                 (Ederef
                   (Ebinop Oadd (Etempvar _seq (tptr tushort))
                     (Etempvar _k tulong) (tptr tushort)) tushort))
               (Ssequence
-                (Sset _t'13
+                (Sset _t'10
                   (Ederef
                     (Ebinop Oadd (Etempvar _seq (tptr tushort))
                       (Etempvar _k tulong) (tptr tushort)) tushort))
                 (Ssequence
-                  (Sset _t'14
+                  (Sset _t'11
                     (Ederef
                       (Ebinop Oadd (Evar _countk (tarray tuint 30000))
-                        (Ebinop Osub (Etempvar _t'13 tushort)
+                        (Ebinop Osub (Etempvar _t'10 tushort)
                           (Econst_int (Int.repr 1) tint) tint) (tptr tuint))
                       tuint))
                   (Sassign
                     (Ederef
                       (Ebinop Oadd (Evar _countk (tarray tuint 30000))
-                        (Ebinop Osub (Etempvar _t'12 tushort)
+                        (Ebinop Osub (Etempvar _t'9 tushort)
                           (Econst_int (Int.repr 1) tint) tint) (tptr tuint))
                       tuint)
-                    (Ebinop Oadd (Etempvar _t'14 tuint)
+                    (Ebinop Oadd (Etempvar _t'11 tuint)
                       (Econst_int (Int.repr 1) tint) tuint))))))
           (Sset _k
             (Ebinop Oadd (Etempvar _k tulong) (Econst_int (Int.repr 1) tint)
@@ -211,11 +254,11 @@ Definition f_solve := {|
                   Sbreak)
                 (Ssequence
                   (Ssequence
-                    (Sset _t'11
+                    (Sset _t'8
                       (Ederef
                         (Ebinop Oadd (Etempvar _seq (tptr tushort))
                           (Etempvar _j tulong) (tptr tushort)) tushort))
-                    (Sset _vj (Ecast (Etempvar _t'11 tushort) tushort)))
+                    (Sset _vj (Ecast (Etempvar _t'8 tushort) tushort)))
                   (Ssequence
                     (Sifthenelse (Ebinop Ole
                                    (Ebinop Omul
@@ -223,103 +266,50 @@ Definition f_solve := {|
                                      (Etempvar _vj tushort) tint)
                                    (Econst_int (Int.repr 30000) tint) tint)
                       (Ssequence
-                        (Sset _vi
+                        (Sset _vmin
                           (Ecast (Econst_int (Int.repr 1) tint) tushort))
-                        (Ssequence
-                          (Sset _vk
-                            (Ecast
-                              (Ebinop Osub
-                                (Ebinop Omul (Econst_int (Int.repr 2) tint)
-                                  (Etempvar _vj tushort) tint)
-                                (Econst_int (Int.repr 1) tint) tint) tushort))
-                          (Swhile
-                            (Ebinop Oge (Etempvar _vk tushort)
-                              (Econst_int (Int.repr 1) tint) tint)
-                            (Ssequence
-                              (Ssequence
-                                (Sset _t'9
-                                  (Ederef
-                                    (Ebinop Oadd
-                                      (Evar _counti (tarray tuint 30000))
-                                      (Ebinop Osub (Etempvar _vi tushort)
-                                        (Econst_int (Int.repr 1) tint) tint)
-                                      (tptr tuint)) tuint))
-                                (Ssequence
-                                  (Sset _t'10
-                                    (Ederef
-                                      (Ebinop Oadd
-                                        (Evar _countk (tarray tuint 30000))
-                                        (Ebinop Osub (Etempvar _vk tushort)
-                                          (Econst_int (Int.repr 1) tint)
-                                          tint) (tptr tuint)) tuint))
-                                  (Sset _result
-                                    (Ebinop Oadd (Etempvar _result tulong)
-                                      (Ebinop Omul (Etempvar _t'9 tuint)
-                                        (Etempvar _t'10 tuint) tuint) tulong))))
-                              (Ssequence
-                                (Sset _vi
-                                  (Ecast
-                                    (Ebinop Oadd (Etempvar _vi tushort)
-                                      (Econst_int (Int.repr 1) tint) tint)
-                                    tushort))
-                                (Sset _vk
-                                  (Ecast
-                                    (Ebinop Osub (Etempvar _vk tushort)
-                                      (Econst_int (Int.repr 1) tint) tint)
-                                    tushort)))))))
+                        (Sset _vmax
+                          (Ecast
+                            (Ebinop Osub
+                              (Ebinop Omul (Econst_int (Int.repr 2) tint)
+                                (Etempvar _vj tushort) tint)
+                              (Econst_int (Int.repr 1) tint) tint) tushort)))
                       (Ssequence
-                        (Sset _vi
+                        (Sset _vmin
                           (Ecast
                             (Ebinop Osub
                               (Ebinop Omul (Econst_int (Int.repr 2) tint)
                                 (Etempvar _vj tushort) tint)
                               (Econst_int (Int.repr 30000) tint) tint)
                             tushort))
-                        (Ssequence
-                          (Sset _vk
-                            (Ecast (Econst_int (Int.repr 30000) tint)
-                              tushort))
-                          (Swhile
-                            (Ebinop Ole (Etempvar _vi tushort)
-                              (Econst_int (Int.repr 30000) tint) tint)
-                            (Ssequence
-                              (Ssequence
-                                (Sset _t'7
-                                  (Ederef
-                                    (Ebinop Oadd
-                                      (Evar _counti (tarray tuint 30000))
-                                      (Ebinop Osub (Etempvar _vi tushort)
-                                        (Econst_int (Int.repr 1) tint) tint)
-                                      (tptr tuint)) tuint))
-                                (Ssequence
-                                  (Sset _t'8
-                                    (Ederef
-                                      (Ebinop Oadd
-                                        (Evar _countk (tarray tuint 30000))
-                                        (Ebinop Osub (Etempvar _vk tushort)
-                                          (Econst_int (Int.repr 1) tint)
-                                          tint) (tptr tuint)) tuint))
-                                  (Sset _result
-                                    (Ebinop Oadd (Etempvar _result tulong)
-                                      (Ebinop Omul (Etempvar _t'7 tuint)
-                                        (Etempvar _t'8 tuint) tuint) tulong))))
-                              (Ssequence
-                                (Sset _vi
-                                  (Ecast
-                                    (Ebinop Oadd (Etempvar _vi tushort)
-                                      (Econst_int (Int.repr 1) tint) tint)
-                                    tushort))
-                                (Sset _vk
-                                  (Ecast
-                                    (Ebinop Osub (Etempvar _vk tushort)
-                                      (Econst_int (Int.repr 1) tint) tint)
-                                    tushort))))))))
+                        (Sset _vmax
+                          (Ecast (Econst_int (Int.repr 30000) tint) tushort))))
                     (Ssequence
                       (Ssequence
-                        (Sset _t'4
-                          (Ederef
-                            (Ebinop Oadd (Etempvar _seq (tptr tushort))
-                              (Etempvar _j tulong) (tptr tushort)) tushort))
+                        (Scall (Some _t'1)
+                          (Evar _flipped_inner_product (Tfunction
+                                                         (Tcons (tptr tuint)
+                                                           (Tcons
+                                                             (tptr tuint)
+                                                             (Tcons tulong
+                                                               Tnil))) tulong
+                                                         cc_default))
+                          ((Ebinop Oadd (Evar _counti (tarray tuint 30000))
+                             (Ebinop Osub (Etempvar _vmin tushort)
+                               (Econst_int (Int.repr 1) tint) tint)
+                             (tptr tuint)) ::
+                           (Ebinop Oadd (Evar _countk (tarray tuint 30000))
+                             (Ebinop Osub (Etempvar _vmin tushort)
+                               (Econst_int (Int.repr 1) tint) tint)
+                             (tptr tuint)) ::
+                           (Ebinop Oadd
+                             (Ebinop Osub (Etempvar _vmax tushort)
+                               (Etempvar _vmin tushort) tint)
+                             (Econst_int (Int.repr 1) tint) tint) :: nil))
+                        (Sset _result
+                          (Ebinop Oadd (Etempvar _result tulong)
+                            (Etempvar _t'1 tulong) tulong)))
+                      (Ssequence
                         (Ssequence
                           (Sset _t'5
                             (Ederef
@@ -328,27 +318,26 @@ Definition f_solve := {|
                           (Ssequence
                             (Sset _t'6
                               (Ederef
-                                (Ebinop Oadd
-                                  (Evar _counti (tarray tuint 30000))
-                                  (Ebinop Osub (Etempvar _t'5 tushort)
-                                    (Econst_int (Int.repr 1) tint) tint)
-                                  (tptr tuint)) tuint))
-                            (Sassign
-                              (Ederef
-                                (Ebinop Oadd
-                                  (Evar _counti (tarray tuint 30000))
-                                  (Ebinop Osub (Etempvar _t'4 tushort)
-                                    (Econst_int (Int.repr 1) tint) tint)
-                                  (tptr tuint)) tuint)
-                              (Ebinop Oadd (Etempvar _t'6 tuint)
-                                (Econst_int (Int.repr 1) tint) tuint)))))
-                      (Ssequence
-                        (Sset _t'1
-                          (Ederef
-                            (Ebinop Oadd (Etempvar _seq (tptr tushort))
-                              (Ebinop Oadd (Etempvar _j tulong)
-                                (Econst_int (Int.repr 1) tint) tulong)
-                              (tptr tushort)) tushort))
+                                (Ebinop Oadd (Etempvar _seq (tptr tushort))
+                                  (Etempvar _j tulong) (tptr tushort))
+                                tushort))
+                            (Ssequence
+                              (Sset _t'7
+                                (Ederef
+                                  (Ebinop Oadd
+                                    (Evar _counti (tarray tuint 30000))
+                                    (Ebinop Osub (Etempvar _t'6 tushort)
+                                      (Econst_int (Int.repr 1) tint) tint)
+                                    (tptr tuint)) tuint))
+                              (Sassign
+                                (Ederef
+                                  (Ebinop Oadd
+                                    (Evar _counti (tarray tuint 30000))
+                                    (Ebinop Osub (Etempvar _t'5 tushort)
+                                      (Econst_int (Int.repr 1) tint) tint)
+                                    (tptr tuint)) tuint)
+                                (Ebinop Oadd (Etempvar _t'7 tuint)
+                                  (Econst_int (Int.repr 1) tint) tuint)))))
                         (Ssequence
                           (Sset _t'2
                             (Ederef
@@ -359,20 +348,27 @@ Definition f_solve := {|
                           (Ssequence
                             (Sset _t'3
                               (Ederef
-                                (Ebinop Oadd
-                                  (Evar _countk (tarray tuint 30000))
-                                  (Ebinop Osub (Etempvar _t'2 tushort)
-                                    (Econst_int (Int.repr 1) tint) tint)
-                                  (tptr tuint)) tuint))
-                            (Sassign
-                              (Ederef
-                                (Ebinop Oadd
-                                  (Evar _countk (tarray tuint 30000))
-                                  (Ebinop Osub (Etempvar _t'1 tushort)
-                                    (Econst_int (Int.repr 1) tint) tint)
-                                  (tptr tuint)) tuint)
-                              (Ebinop Osub (Etempvar _t'3 tuint)
-                                (Econst_int (Int.repr 1) tint) tuint)))))))))
+                                (Ebinop Oadd (Etempvar _seq (tptr tushort))
+                                  (Ebinop Oadd (Etempvar _j tulong)
+                                    (Econst_int (Int.repr 1) tint) tulong)
+                                  (tptr tushort)) tushort))
+                            (Ssequence
+                              (Sset _t'4
+                                (Ederef
+                                  (Ebinop Oadd
+                                    (Evar _countk (tarray tuint 30000))
+                                    (Ebinop Osub (Etempvar _t'3 tushort)
+                                      (Econst_int (Int.repr 1) tint) tint)
+                                    (tptr tuint)) tuint))
+                              (Sassign
+                                (Ederef
+                                  (Ebinop Oadd
+                                    (Evar _countk (tarray tuint 30000))
+                                    (Ebinop Osub (Etempvar _t'2 tushort)
+                                      (Econst_int (Int.repr 1) tint) tint)
+                                    (tptr tuint)) tuint)
+                                (Ebinop Osub (Etempvar _t'4 tuint)
+                                  (Econst_int (Int.repr 1) tint) tuint))))))))))
               (Sset _j
                 (Ebinop Oadd (Etempvar _j tulong)
                   (Econst_int (Int.repr 1) tint) tulong))))
@@ -718,12 +714,13 @@ Definition global_definitions : list (ident * globdef fundef type) :=
                    (mksignature (AST.Tlong :: AST.Tint :: AST.Tlong :: nil)
                      AST.Tlong cc_default))
      (Tcons (tptr tvoid) (Tcons tint (Tcons tulong Tnil))) (tptr tvoid)
-     cc_default)) :: (_solve, Gfun(Internal f_solve)) ::
- (_main, Gfun(Internal f_main)) :: nil).
+     cc_default)) ::
+ (_flipped_inner_product, Gfun(Internal f_flipped_inner_product)) ::
+ (_solve, Gfun(Internal f_solve)) :: (_main, Gfun(Internal f_main)) :: nil).
 
 Definition public_idents : list ident :=
-(_main :: _solve :: _memset :: ___isoc99_scanf :: _printf ::
- ___builtin_debug :: ___builtin_write32_reversed ::
+(_main :: _solve :: _flipped_inner_product :: _memset :: ___isoc99_scanf ::
+ _printf :: ___builtin_debug :: ___builtin_write32_reversed ::
  ___builtin_write16_reversed :: ___builtin_read32_reversed ::
  ___builtin_read16_reversed :: ___builtin_fnmsub :: ___builtin_fnmadd ::
  ___builtin_fmsub :: ___builtin_fmadd :: ___builtin_fmin ::
