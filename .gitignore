@@ -1,1 +1,6 @@
 .direnv
+*.aux
+*.vo
+*.vok
+*.vos
+*.glob
