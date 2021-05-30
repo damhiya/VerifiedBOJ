@@ -98,7 +98,47 @@ Definition flipped_inner_product_spec : ident * funspec :=
         data_at ys_sh (tarray tuint size) (map (Vint oo Int.repr) ys) ys_ptr
       ).
 
-Definition Gprog := [ flipped_inner_product_spec ].
+Definition solve_spec : ident * funspec :=
+  DECLARE _solve
+    WITH seq_sh : share, seq_ptr : val, seq : list Z, size : Z
+    PRE [ tptr tushort, tulong ]
+      PROP ()
+      PARAMS (seq_ptr; Vlong (Int64.repr size))
+      SEP (
+        data_at seq_sh (tarray tushort size) (map (Vint oo Int.repr) seq) seq_ptr
+      )
+    POST [ tulong ]
+      PROP ()
+      RETURN ()
+      SEP (
+        data_at seq_sh (tarray tushort size) (map (Vint oo Int.repr) seq) seq_ptr
+      ).
+
+Definition Gprog : funspecs := [ flipped_inner_product_spec; solve_spec ].
+
+(*
+Lemma body_solve_spec :
+  semax_body Vprog Gprog f_solve solve_spec.
+Proof.
+  start_function.
+  forward.
+  forward_for_simple (
+    EX i : Z,
+      PROP (0 <= i < 30000)
+      LOCAL (
+        temp _m (Vlong (Int64.repr 30000));
+        lvar _counti (tarray tuint 30000) v_counti;
+        lvar _countk (tarray tuint 30000) v_countk
+      )
+      SEP (
+        data_at seq_sh (tarray tushort size) (map (Vint oo Int.repr) seq) seq_ptr;
+        data_at_ Tsh (tarray tuint 30000) v_counti;
+        data_at_ Tsh (tarray tuint 30000) v_countk
+      )).
+  - entailer!.
+  - forward.
+    forward.
+*)
 
 Lemma body_flipped_inner_product_spec :
   semax_body Vprog Gprog f_flipped_inner_product flipped_inner_product_spec.
@@ -129,49 +169,26 @@ Proof.
     forward.
     forward.
     entailer!.
-    remember (map (uncurry Z.mul) (combine xs (rev ys))) as lst.
     rewrite sum_Z_sublist.
     repeat (rewrite Zlength_map in *).
     rewrite <- H9.
-    rewrite <- Znth_rev in *.
-    + rewrite Heqlst.
-      rewrite Znth_map.
-      rewrite Znth_combine.
-      simpl.
-      rewrite 2 Int.unsigned_repr.
-      reflexivity.
-      * apply sublist.Forall_Znth.
-        rewrite Zlength_rev.
-        lia.
-        apply Forall_rev.
-        assumption.
-      * apply sublist.Forall_Znth.
-        lia.
-        assumption.
-      * rewrite rev_length.
-        rewrite 2 Zlength_correct in H9.
-        lia.
-      * rewrite Zlength_combine.
-        rewrite Zlength_rev.
-        lia.
-      * rewrite Zlength_combine.
-        rewrite Zlength_rev.
-        lia.
-    + lia.
-    + rewrite Heqlst.
-      repeat (rewrite Zlength_map in *).
-      rewrite Zlength_combine.
-      rewrite Zlength_rev.
-      lia.
+    rewrite <- Znth_rev.
+    rewrite Znth_map.
+    rewrite Znth_combine.
+    simpl.
+    rewrite 2 Int.unsigned_repr.
+    reflexivity.
+    all: repeat (rewrite Zlength_map in *); try (rewrite Zlength_combine, Zlength_rev in *); try lia.
+    all: apply sublist.Forall_Znth; try (apply Forall_rev); try assumption.
+    rewrite Zlength_rev.
+    lia.
   - forward.
     entailer!.
     unfold flipped_inner_product, zip_with.
-    rewrite Zlength_map in *.
-    rewrite sublist_same.
-    + reflexivity.
-    + reflexivity.
-    + repeat (rewrite Zlength_map in *).
-      rewrite Zlength_combine.
-      rewrite Zlength_rev.
-      lia.
+    repeat (rewrite Zlength_map in *).
+    rewrite sublist_same; try reflexivity.
+    rewrite Zlength_map.
+    rewrite Zlength_combine.
+    rewrite Zlength_rev.
+    lia.
 Qed.
