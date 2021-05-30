@@ -35,16 +35,39 @@ Proof.
 Qed.
 
 Lemma Znth_combine (xs ys : list Z) (i : Z) :
-  length xs = length ys ->
   0 <= i < Zlength (combine xs ys) ->
   Znth i (combine xs ys) = (Znth i xs, Znth i ys).
 Proof.
   intros.
+  set (n := Zlength (combine xs ys)).
+  Search firstn Znth.
+  rewrite <- (Znth_firstn (combine xs ys) i n).
+  rewrite combine_firstn.
   rewrite <- nth_Znth.
   rewrite combine_nth.
-  rewrite 2 nth_Znth by (rewrite Zlength_combine in H0; lia).
+  rewrite 2 nth_Znth.
+  rewrite 2 Znth_firstn.
   reflexivity.
   - lia.
+  - lia.
+  - rewrite Zlength_firstn.
+    unfold n.
+    rewrite Zlength_combine in *.
+    lia.
+  - rewrite Zlength_firstn.
+    unfold n.
+    rewrite Zlength_combine in *.
+    lia.
+  - rewrite 2 firstn_length.
+    unfold n.
+    rewrite Zlength_combine in *.
+    rewrite <- 2 ZtoNat_Zlength.
+    lia.
+  - rewrite Zlength_combine.
+    rewrite 2 Zlength_firstn.
+    unfold n.
+    rewrite Zlength_combine in *.
+    lia.
   - lia.
 Qed.
 
