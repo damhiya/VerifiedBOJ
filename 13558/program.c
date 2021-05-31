@@ -1,6 +1,24 @@
 #include <stdio.h>
 #include <string.h>
 
+#define M 30000
+
+void zeroing(unsigned int * const xs, const size_t n) {
+  for (size_t i=0; i<n; i++)
+    xs[i] = 0;
+}
+
+// 1 <= xs[i] <= 30 000
+void count_frequency (
+    unsigned int * const count,
+    const unsigned short * const xs,
+    const size_t n,
+    const unsigned short base
+  ) {
+  for (size_t i=0; i<n; i++)
+    count[xs[i]-base]++;
+}
+
 unsigned long long flipped_inner_product(const unsigned int * const xs, const unsigned int * const ys, const size_t n) {
   unsigned long long sum = 0;
 
@@ -10,12 +28,6 @@ unsigned long long flipped_inner_product(const unsigned int * const xs, const un
   return sum;
 }
 
-void zeroing(unsigned int * const xs, const size_t n) {
-  for (size_t i=0; i<n; i++)
-    xs[i] = 0;
-}
-
-#define M 30000
 // 3 <= n <= 100 000
 // 0 <= i < j < k < n
 // 1 <= seq[i] <= 30 000
@@ -23,16 +35,9 @@ unsigned long long solve(const unsigned short * const seq, const size_t n) {
   unsigned int counti[M];
   unsigned int countk[M];
 
-  /*
-  memset(counti, 0, sizeof(unsigned int) * M);
-  memset(countk, 0, sizeof(unsigned int) * M);
-  */
   zeroing(counti, M);
   zeroing(countk, M);
-  
-  for (size_t k=0; k<n; k++)
-    countk[seq[k]-1]++;
-  
+  count_frequency(countk, seq, n, 1);
   unsigned long long result = 0;
   
   for (size_t j = 0; j<n; j++) {

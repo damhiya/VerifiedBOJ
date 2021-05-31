@@ -75,12 +75,14 @@ Definition ___isoc99_scanf : ident := $"__isoc99_scanf".
 Definition ___stringlit_1 : ident := $"__stringlit_1".
 Definition ___stringlit_2 : ident := $"__stringlit_2".
 Definition ___stringlit_3 : ident := $"__stringlit_3".
+Definition _base : ident := $"base".
+Definition _count : ident := $"count".
+Definition _count_frequency : ident := $"count_frequency".
 Definition _counti : ident := $"counti".
 Definition _countk : ident := $"countk".
 Definition _flipped_inner_product : ident := $"flipped_inner_product".
 Definition _i : ident := $"i".
 Definition _j : ident := $"j".
-Definition _k : ident := $"k".
 Definition _main : ident := $"main".
 Definition _n : ident := $"n".
 Definition _printf : ident := $"printf".
@@ -98,9 +100,6 @@ Definition _t'1 : ident := 128%positive.
 Definition _t'2 : ident := 129%positive.
 Definition _t'3 : ident := 130%positive.
 Definition _t'4 : ident := 131%positive.
-Definition _t'5 : ident := 132%positive.
-Definition _t'6 : ident := 133%positive.
-Definition _t'7 : ident := 134%positive.
 
 Definition v___stringlit_1 := {|
   gvar_info := (tarray tschar 4);
@@ -125,6 +124,75 @@ Definition v___stringlit_3 := {|
                 Init_int8 (Int.repr 10) :: Init_int8 (Int.repr 0) :: nil);
   gvar_readonly := true;
   gvar_volatile := false
+|}.
+
+Definition f_zeroing := {|
+  fn_return := tvoid;
+  fn_callconv := cc_default;
+  fn_params := ((_xs, (tptr tuint)) :: (_n, tulong) :: nil);
+  fn_vars := nil;
+  fn_temps := ((_i, tulong) :: nil);
+  fn_body :=
+(Ssequence
+  (Sset _i (Ecast (Econst_int (Int.repr 0) tint) tulong))
+  (Sloop
+    (Ssequence
+      (Sifthenelse (Ebinop Olt (Etempvar _i tulong) (Etempvar _n tulong)
+                     tint)
+        Sskip
+        Sbreak)
+      (Sassign
+        (Ederef
+          (Ebinop Oadd (Etempvar _xs (tptr tuint)) (Etempvar _i tulong)
+            (tptr tuint)) tuint) (Econst_int (Int.repr 0) tint)))
+    (Sset _i
+      (Ebinop Oadd (Etempvar _i tulong) (Econst_int (Int.repr 1) tint)
+        tulong))))
+|}.
+
+Definition f_count_frequency := {|
+  fn_return := tvoid;
+  fn_callconv := cc_default;
+  fn_params := ((_count, (tptr tuint)) :: (_xs, (tptr tushort)) ::
+                (_n, tulong) :: (_base, tushort) :: nil);
+  fn_vars := nil;
+  fn_temps := ((_i, tulong) :: (_t'3, tuint) :: (_t'2, tushort) ::
+               (_t'1, tushort) :: nil);
+  fn_body :=
+(Ssequence
+  (Sset _i (Ecast (Econst_int (Int.repr 0) tint) tulong))
+  (Sloop
+    (Ssequence
+      (Sifthenelse (Ebinop Olt (Etempvar _i tulong) (Etempvar _n tulong)
+                     tint)
+        Sskip
+        Sbreak)
+      (Ssequence
+        (Sset _t'1
+          (Ederef
+            (Ebinop Oadd (Etempvar _xs (tptr tushort)) (Etempvar _i tulong)
+              (tptr tushort)) tushort))
+        (Ssequence
+          (Sset _t'2
+            (Ederef
+              (Ebinop Oadd (Etempvar _xs (tptr tushort)) (Etempvar _i tulong)
+                (tptr tushort)) tushort))
+          (Ssequence
+            (Sset _t'3
+              (Ederef
+                (Ebinop Oadd (Etempvar _count (tptr tuint))
+                  (Ebinop Osub (Etempvar _t'2 tushort)
+                    (Etempvar _base tushort) tint) (tptr tuint)) tuint))
+            (Sassign
+              (Ederef
+                (Ebinop Oadd (Etempvar _count (tptr tuint))
+                  (Ebinop Osub (Etempvar _t'1 tushort)
+                    (Etempvar _base tushort) tint) (tptr tuint)) tuint)
+              (Ebinop Oadd (Etempvar _t'3 tuint)
+                (Econst_int (Int.repr 1) tint) tuint))))))
+    (Sset _i
+      (Ebinop Oadd (Etempvar _i tulong) (Econst_int (Int.repr 1) tint)
+        tulong))))
 |}.
 
 Definition f_flipped_inner_product := {|
@@ -170,41 +238,15 @@ Definition f_flipped_inner_product := {|
     (Sreturn (Some (Etempvar _sum tulong)))))
 |}.
 
-Definition f_zeroing := {|
-  fn_return := tvoid;
-  fn_callconv := cc_default;
-  fn_params := ((_xs, (tptr tuint)) :: (_n, tulong) :: nil);
-  fn_vars := nil;
-  fn_temps := ((_i, tulong) :: nil);
-  fn_body :=
-(Ssequence
-  (Sset _i (Ecast (Econst_int (Int.repr 0) tint) tulong))
-  (Sloop
-    (Ssequence
-      (Sifthenelse (Ebinop Olt (Etempvar _i tulong) (Etempvar _n tulong)
-                     tint)
-        Sskip
-        Sbreak)
-      (Sassign
-        (Ederef
-          (Ebinop Oadd (Etempvar _xs (tptr tuint)) (Etempvar _i tulong)
-            (tptr tuint)) tuint) (Econst_int (Int.repr 0) tint)))
-    (Sset _i
-      (Ebinop Oadd (Etempvar _i tulong) (Econst_int (Int.repr 1) tint)
-        tulong))))
-|}.
-
 Definition f_solve := {|
   fn_return := tulong;
   fn_callconv := cc_default;
   fn_params := ((_seq, (tptr tushort)) :: (_n, tulong) :: nil);
   fn_vars := ((_counti, (tarray tuint 30000)) ::
               (_countk, (tarray tuint 30000)) :: nil);
-  fn_temps := ((_k, tulong) :: (_result, tulong) :: (_j, tulong) ::
-               (_vmin, tushort) :: (_vmax, tushort) :: (_vj, tushort) ::
-               (_t'1, tulong) :: (_t'7, tuint) :: (_t'6, tushort) ::
-               (_t'5, tushort) :: (_t'4, tushort) :: (_t'3, tuint) ::
-               (_t'2, tuint) :: nil);
+  fn_temps := ((_result, tulong) :: (_j, tulong) :: (_vmin, tushort) ::
+               (_vmax, tushort) :: (_vj, tushort) :: (_t'1, tulong) ::
+               (_t'4, tushort) :: (_t'3, tuint) :: (_t'2, tuint) :: nil);
   fn_body :=
 (Ssequence
   (Scall None
@@ -219,42 +261,15 @@ Definition f_solve := {|
       ((Evar _countk (tarray tuint 30000)) ::
        (Econst_int (Int.repr 30000) tint) :: nil))
     (Ssequence
-      (Ssequence
-        (Sset _k (Ecast (Econst_int (Int.repr 0) tint) tulong))
-        (Sloop
-          (Ssequence
-            (Sifthenelse (Ebinop Olt (Etempvar _k tulong)
-                           (Etempvar _n tulong) tint)
-              Sskip
-              Sbreak)
-            (Ssequence
-              (Sset _t'5
-                (Ederef
-                  (Ebinop Oadd (Etempvar _seq (tptr tushort))
-                    (Etempvar _k tulong) (tptr tushort)) tushort))
-              (Ssequence
-                (Sset _t'6
-                  (Ederef
-                    (Ebinop Oadd (Etempvar _seq (tptr tushort))
-                      (Etempvar _k tulong) (tptr tushort)) tushort))
-                (Ssequence
-                  (Sset _t'7
-                    (Ederef
-                      (Ebinop Oadd (Evar _countk (tarray tuint 30000))
-                        (Ebinop Osub (Etempvar _t'6 tushort)
-                          (Econst_int (Int.repr 1) tint) tint) (tptr tuint))
-                      tuint))
-                  (Sassign
-                    (Ederef
-                      (Ebinop Oadd (Evar _countk (tarray tuint 30000))
-                        (Ebinop Osub (Etempvar _t'5 tushort)
-                          (Econst_int (Int.repr 1) tint) tint) (tptr tuint))
-                      tuint)
-                    (Ebinop Oadd (Etempvar _t'7 tuint)
-                      (Econst_int (Int.repr 1) tint) tuint))))))
-          (Sset _k
-            (Ebinop Oadd (Etempvar _k tulong) (Econst_int (Int.repr 1) tint)
-              tulong))))
+      (Scall None
+        (Evar _count_frequency (Tfunction
+                                 (Tcons (tptr tuint)
+                                   (Tcons (tptr tushort)
+                                     (Tcons tulong (Tcons tushort Tnil))))
+                                 tvoid cc_default))
+        ((Evar _countk (tarray tuint 30000)) ::
+         (Etempvar _seq (tptr tushort)) :: (Etempvar _n tulong) ::
+         (Econst_int (Int.repr 1) tint) :: nil))
       (Ssequence
         (Sset _result (Ecast (Econst_int (Int.repr 0) tint) tulong))
         (Ssequence
@@ -698,31 +713,33 @@ Definition global_definitions : list (ident * globdef fundef type) :=
                      {|cc_vararg:=true; cc_unproto:=false; cc_structret:=false|}))
      (Tcons (tptr tschar) Tnil) tint
      {|cc_vararg:=true; cc_unproto:=false; cc_structret:=false|})) ::
+ (_zeroing, Gfun(Internal f_zeroing)) ::
+ (_count_frequency, Gfun(Internal f_count_frequency)) ::
  (_flipped_inner_product, Gfun(Internal f_flipped_inner_product)) ::
- (_zeroing, Gfun(Internal f_zeroing)) :: (_solve, Gfun(Internal f_solve)) ::
- (_main, Gfun(Internal f_main)) :: nil).
+ (_solve, Gfun(Internal f_solve)) :: (_main, Gfun(Internal f_main)) :: nil).
 
 Definition public_idents : list ident :=
-(_main :: _solve :: _zeroing :: _flipped_inner_product :: ___isoc99_scanf ::
- _printf :: ___builtin_debug :: ___builtin_write32_reversed ::
- ___builtin_write16_reversed :: ___builtin_read32_reversed ::
- ___builtin_read16_reversed :: ___builtin_fnmsub :: ___builtin_fnmadd ::
- ___builtin_fmsub :: ___builtin_fmadd :: ___builtin_fmin ::
- ___builtin_fmax :: ___compcert_i64_umulh :: ___compcert_i64_smulh ::
- ___compcert_i64_sar :: ___compcert_i64_shr :: ___compcert_i64_shl ::
- ___compcert_i64_umod :: ___compcert_i64_smod :: ___compcert_i64_udiv ::
- ___compcert_i64_sdiv :: ___compcert_i64_utof :: ___compcert_i64_stof ::
- ___compcert_i64_utod :: ___compcert_i64_stod :: ___compcert_i64_dtou ::
- ___compcert_i64_dtos :: ___compcert_va_composite ::
- ___compcert_va_float64 :: ___compcert_va_int64 :: ___compcert_va_int32 ::
- ___builtin_va_end :: ___builtin_va_copy :: ___builtin_va_arg ::
- ___builtin_va_start :: ___builtin_membar :: ___builtin_annot_intval ::
- ___builtin_annot :: ___builtin_sel :: ___builtin_memcpy_aligned ::
- ___builtin_sqrt :: ___builtin_fsqrt :: ___builtin_fabsf ::
- ___builtin_fabs :: ___builtin_ctzll :: ___builtin_ctzl :: ___builtin_ctz ::
- ___builtin_clzll :: ___builtin_clzl :: ___builtin_clz ::
- ___builtin_bswap16 :: ___builtin_bswap32 :: ___builtin_bswap ::
- ___builtin_bswap64 :: ___builtin_ais_annot :: nil).
+(_main :: _solve :: _flipped_inner_product :: _count_frequency :: _zeroing ::
+ ___isoc99_scanf :: _printf :: ___builtin_debug ::
+ ___builtin_write32_reversed :: ___builtin_write16_reversed ::
+ ___builtin_read32_reversed :: ___builtin_read16_reversed ::
+ ___builtin_fnmsub :: ___builtin_fnmadd :: ___builtin_fmsub ::
+ ___builtin_fmadd :: ___builtin_fmin :: ___builtin_fmax ::
+ ___compcert_i64_umulh :: ___compcert_i64_smulh :: ___compcert_i64_sar ::
+ ___compcert_i64_shr :: ___compcert_i64_shl :: ___compcert_i64_umod ::
+ ___compcert_i64_smod :: ___compcert_i64_udiv :: ___compcert_i64_sdiv ::
+ ___compcert_i64_utof :: ___compcert_i64_stof :: ___compcert_i64_utod ::
+ ___compcert_i64_stod :: ___compcert_i64_dtou :: ___compcert_i64_dtos ::
+ ___compcert_va_composite :: ___compcert_va_float64 ::
+ ___compcert_va_int64 :: ___compcert_va_int32 :: ___builtin_va_end ::
+ ___builtin_va_copy :: ___builtin_va_arg :: ___builtin_va_start ::
+ ___builtin_membar :: ___builtin_annot_intval :: ___builtin_annot ::
+ ___builtin_sel :: ___builtin_memcpy_aligned :: ___builtin_sqrt ::
+ ___builtin_fsqrt :: ___builtin_fabsf :: ___builtin_fabs ::
+ ___builtin_ctzll :: ___builtin_ctzl :: ___builtin_ctz :: ___builtin_clzll ::
+ ___builtin_clzl :: ___builtin_clz :: ___builtin_bswap16 ::
+ ___builtin_bswap32 :: ___builtin_bswap :: ___builtin_bswap64 ::
+ ___builtin_ais_annot :: nil).
 
 Definition prog : Clight.program := 
   mkprogram composites global_definitions public_idents _main Logic.I.

@@ -48,31 +48,40 @@ Proof.
   rewrite 2 nth_Znth.
   rewrite 2 Znth_firstn.
   reflexivity.
-  - lia.
-  - lia.
-  - rewrite Zlength_firstn.
-    unfold n.
-    rewrite Zlength_combine in *.
-    lia.
-  - rewrite Zlength_firstn.
-    unfold n.
-    rewrite Zlength_combine in *.
-    lia.
-  - rewrite 2 firstn_length.
-    unfold n.
-    rewrite Zlength_combine in *.
-    rewrite <- 2 ZtoNat_Zlength.
-    lia.
-  - rewrite Zlength_combine.
-    rewrite 2 Zlength_firstn.
-    unfold n.
-    rewrite Zlength_combine in *.
-    lia.
-  - lia.
+  all: unfold n.
+  all: repeat (rewrite Zlength_combine in *).
+  all: repeat (rewrite Zlength_firstn).
+  all: repeat (rewrite firstn_length).
+  all: repeat (rewrite <- ZtoNat_Zlength).
+  all: lia.
 Qed.
+
+Definition to_onehot (a b x : Z) : list Z := list_repeat (Z.to_nat (x - a)) 0 ++ [1] ++ list_repeat (Z.to_nat (b - x)) 0.
+
+Definition count_frequency (xs : list Z) (a b : Z) : list Z
+  := fold_right (zip_with Z.add) (list_repeat (Z.to_nat (b - a + 1)) 0) (map (to_onehot a b) xs).
 
 Definition flipped_inner_product (xs ys : list Z) : Z :=
   sum_Z (zip_with Z.mul xs (rev ys)).
+
+Definition zeroing_spec : ident * funspec :=
+  DECLARE _zeroing
+    WITH xs_sh : share, xs_ptr : val, size : Z
+    PRE [ tptr tuint, tulong ]
+      PROP (
+        writable_share xs_sh;
+        0 <= size <= Int64.max_unsigned
+      )
+      PARAMS (xs_ptr; Vlong (Int64.repr size))
+      SEP (
+        data_at_ xs_sh (tarray tuint size) xs_ptr
+      )
+    POST [ tvoid ]
+      PROP ()
+      RETURN ()
+      SEP (
+        data_at xs_sh (tarray tuint size) (list_repeat (Z.to_nat size) (Vint (Int.repr 0))) xs_ptr
+      ).
 
 Definition flipped_inner_product_spec : ident * funspec :=
   DECLARE _flipped_inner_product
@@ -102,7 +111,11 @@ Definition solve_spec : ident * funspec :=
   DECLARE _solve
     WITH seq_sh : share, seq_ptr : val, seq : list Z, size : Z
     PRE [ tptr tushort, tulong ]
-      PROP ()
+      PROP (
+        readable_share seq_sh;
+        0 <= size <= Int.max_unsigned;
+        Forall (fun x => 1 <= x <= 30000) seq
+      )
       PARAMS (seq_ptr; Vlong (Int64.repr size))
       SEP (
         data_at seq_sh (tarray tushort size) (map (Vint oo Int.repr) seq) seq_ptr
@@ -114,33 +127,76 @@ Definition solve_spec : ident * funspec :=
         data_at seq_sh (tarray tushort size) (map (Vint oo Int.repr) seq) seq_ptr
       ).
 
-Definition Gprog : funspecs := [ flipped_inner_product_spec; solve_spec ].
+Definition Gprog : funspecs := [ zeroing_spec; flipped_inner_product_spec; solve_spec ].
+
+Lemma body_zeroing :
+  semax_body Vprog Gprog f_zeroing zeroing_spec.
+Proof.
+  start_function.
+  forward_for_simple_bound size (
+    EX i : Z,
+      PROP ()
+      LOCAL (
+        temp _xs xs_ptr;
+        temp _n (Vlong (Int64.repr size))
+      )
+      SEP (
+        data_at xs_sh (tarray tuint size)
+          ( list_repeat (Z.to_nat i) (Vint (Int.repr 0))
+         ++ list_repeat (Z.to_nat (size - i)) Vundef
+          ) xs_ptr
+      )).
+  - entailer!.
+    simpl.
+    entailer!.
+  - forward.
+    entailer!.
+    list_solve.
+  - entailer!.
+    list_solve.
+Qed.
 
 (*
-Lemma body_solve_spec :
+Lemma body_solve :
   semax_body Vprog Gprog f_solve solve_spec.
 Proof.
   start_function.
-  forward.
-  forward_for_simple (
+  forward_call (Tsh, v_counti, 30000).
+  1: (split; [auto | computable ]).
+  forward_call (Tsh, v_countk, 30000).
+  1: split; [auto | computable].
+  forward_for_simple_bound size (
     EX i : Z,
-      PROP (0 <= i < 30000)
+      PROP ()
       LOCAL (
-        temp _m (Vlong (Int64.repr 30000));
         lvar _counti (tarray tuint 30000) v_counti;
-        lvar _countk (tarray tuint 30000) v_countk
+        lvar _countk (tarray tuint 30000) v_countk;
+        temp _seq seq_ptr;
+        temp _n (Vlong (Int64.repr size))
       )
       SEP (
-        data_at seq_sh (tarray tushort size) (map (Vint oo Int.repr) seq) seq_ptr;
-        data_at_ Tsh (tarray tuint 30000) v_counti;
-        data_at_ Tsh (tarray tuint 30000) v_countk
+        data_at Tsh (tarray tuint 30000) (list_repeat (Z.to_nat 30000) (Vint (Int.repr 0))) v_counti;
+        data_at Tsh (tarray tuint 30000) (list_repeat (Z.to_nat 30000) (Vint (Int.repr 0))) v_countk;
+        data_at seq_sh (tarray tushort size) (map (Vint oo Int.repr) seq) seq_ptr
       )).
   - entailer!.
-  - forward.
+  - assert_PROP (0 <= i < Zlength seq).
+    1: entailer!; rewrite Zlength_map in H1; assumption.
     forward.
+    { entailer!.
+      assert (1 <= Znth i seq <= 30000) by (apply Forall_Znth; assumption).
+      rewrite Int.unsigned_repr.
+      lia.
+      unfold Int.max_unsigned, Int.modulus.
+      simpl.
+      lia.
+    }
+    forward.
+    assert_PROP (1 <= Znth i seq <= 30000).
+    1: entailer!; apply Forall_Znth; assumption.
 *)
 
-Lemma body_flipped_inner_product_spec :
+Lemma body_flipped_inner_product :
   semax_body Vprog Gprog f_flipped_inner_product flipped_inner_product_spec.
 Proof.
   start_function.
