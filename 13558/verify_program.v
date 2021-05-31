@@ -1,68 +1,8 @@
 Require Import VST.floyd.proofauto.
 Require Import program.
+Require Import list_lemma.
 Instance CompSpecs : compspecs. make_compspecs prog. Defined.
 Definition Vprog : varspecs. mk_varspecs prog. Defined.
-
-Definition zip_with {A B C : Type} (f : A -> B -> C) (xs : list A) (ys : list B) : list C
-  := map (uncurry f) (combine xs ys).
-
-Definition sum_Z := fold_right Z.add 0.
-
-Lemma sum_Z_app xs ys : sum_Z (xs ++ ys) = sum_Z xs + sum_Z ys.
-Proof.
-  induction xs; simpl; lia.
-Qed.
-
-Lemma sum_Z_sublist (xs : list Z) (i : Z) :
-  0 <= i < Zlength xs -> sum_Z (sublist 0 (i+1) xs) = sum_Z (sublist 0 i xs) + Znth i xs.
-Proof.
-  intros.
-  rewrite (sublist_split 0 i (i+1)) by lia.
-  rewrite (sublist_one i (i+1)) by lia.
-  rewrite sum_Z_app; simpl.
-  lia.
-Qed.
-
-Lemma Zlength_combine (xs ys : list Z) :
-  Zlength (combine xs ys) = Z.min (Zlength xs) (Zlength ys).
-Proof.
-  apply Zlength_length.
-  list_solve.
-  rewrite combine_length.
-  rewrite Z2Nat.inj_min.
-  rewrite 2 ZtoNat_Zlength.
-  reflexivity.
-Qed.
-
-Lemma Znth_combine (xs ys : list Z) (i : Z) :
-  0 <= i < Zlength (combine xs ys) ->
-  Znth i (combine xs ys) = (Znth i xs, Znth i ys).
-Proof.
-  intros.
-  set (n := Zlength (combine xs ys)).
-  Search firstn Znth.
-  rewrite <- (Znth_firstn (combine xs ys) i n).
-  rewrite combine_firstn.
-  rewrite <- nth_Znth.
-  rewrite combine_nth.
-  rewrite 2 nth_Znth.
-  rewrite 2 Znth_firstn.
-  reflexivity.
-  all: unfold n.
-  all: repeat (rewrite Zlength_combine in *).
-  all: repeat (rewrite Zlength_firstn).
-  all: repeat (rewrite firstn_length).
-  all: repeat (rewrite <- ZtoNat_Zlength).
-  all: lia.
-Qed.
-
-Definition to_onehot (a b x : Z) : list Z := list_repeat (Z.to_nat (x - a)) 0 ++ [1] ++ list_repeat (Z.to_nat (b - x)) 0.
-
-Definition count_frequency (xs : list Z) (a b : Z) : list Z
-  := fold_right (zip_with Z.add) (list_repeat (Z.to_nat (b - a + 1)) 0) (map (to_onehot a b) xs).
-
-Definition flipped_inner_product (xs ys : list Z) : Z :=
-  sum_Z (zip_with Z.mul xs (rev ys)).
 
 Definition zeroing_spec : ident * funspec :=
   DECLARE _zeroing
@@ -81,6 +21,32 @@ Definition zeroing_spec : ident * funspec :=
       RETURN ()
       SEP (
         data_at xs_sh (tarray tuint size) (list_repeat (Z.to_nat size) (Vint (Int.repr 0))) xs_ptr
+      ).
+
+Definition count_frequency_spec : ident * funspec :=
+  DECLARE _count_frequency
+    WITH count_sh : share, count_ptr : val, xs_sh : share, xs_ptr : val, xs : list Z, n : Z, a : Z, b : Z
+    PRE [ tptr tuint, tptr tushort, tulong, tushort ]
+      PROP (
+        writable_share count_sh;
+        readable_share xs_sh;
+        0 <= n <= Int.max_unsigned;
+        0 <= a <= 65535;
+        0 <= b <= 65535;
+        a <= b;
+        Forall (fun x => a <= x < b) xs
+      )
+      PARAMS (count_ptr; xs_ptr; Vlong (Int64.repr n); Vint (Int.repr a))
+      SEP (
+        data_at count_sh (tarray tuint (b - a)) (list_repeat (Z.to_nat (b - a)) (Vint (Int.repr 0))) count_ptr;
+        data_at xs_sh (tarray tushort n) (map (Vint oo Int.repr) xs) xs_ptr
+      )
+    POST [ tvoid ]
+      PROP ()
+      RETURN ()
+      SEP (
+        data_at count_sh (tarray tuint (b - a)) (map (Vint oo Int.repr) (count_frequency xs a b)) count_ptr;
+        data_at xs_sh (tarray tushort n) (map (Vint oo Int.repr) xs) xs_ptr
       ).
 
 Definition flipped_inner_product_spec : ident * funspec :=
@@ -127,7 +93,12 @@ Definition solve_spec : ident * funspec :=
         data_at seq_sh (tarray tushort size) (map (Vint oo Int.repr) seq) seq_ptr
       ).
 
-Definition Gprog : funspecs := [ zeroing_spec; flipped_inner_product_spec; solve_spec ].
+Definition Gprog : funspecs := [ zeroing_spec; count_frequency_spec; flipped_inner_product_spec; solve_spec ].
+
+Ltac range_solve :=
+  unfold Int.max_unsigned, Int.modulus;
+  simpl;
+  try lia.
 
 Lemma body_zeroing :
   semax_body Vprog Gprog f_zeroing zeroing_spec.
@@ -155,6 +126,61 @@ Proof.
   - entailer!.
     list_solve.
 Qed.
+
+Lemma body_count_frequency :
+  semax_body Vprog Gprog f_count_frequency count_frequency_spec.
+Proof.
+  start_function.
+  forward_for_simple_bound n (
+    EX i : Z,
+      PROP ()
+      LOCAL (
+        temp _count count_ptr;
+        temp _xs xs_ptr;
+        temp _n (Vlong (Int64.repr n));
+        temp _base (Vint (Int.repr a))
+      )
+      SEP (
+        data_at count_sh (tarray tuint (b - a)) (map (Vint oo Int.repr) (count_frequency (sublist 0 i xs) a b)) count_ptr;
+        data_at xs_sh (tarray tushort n) (map (Vint oo Int.repr) xs) xs_ptr
+      )).
+  - entailer!.
+    unfold count_frequency.
+    simpl.
+    rewrite map_list_repeat.
+    entailer!.
+  - assert_PROP (0 <= i < Zlength xs).
+    {  entailer!.
+       rewrite Zlength_map in *.
+       assumption.
+    }
+    forward.
+    + entailer!.
+      assert (a <= Znth i xs < b) by (apply Forall_Znth; assumption).
+      rewrite Int.unsigned_repr.
+      lia.
+      range_solve.
+    + forward.
+      assert (a <= Znth i xs < b) by (apply Forall_Znth; assumption).
+      assert_PROP (Zlength (count_frequency (sublist 0 i xs) a b) = b - a).
+      { entailer!.
+        rewrite Zlength_count_frequency.
+        - reflexivity.
+        - lia.
+        - apply Forall_sublist.
+          assumption.
+      }
+      forward.
+      forward.
+      entailer!.
+      admit.
+  - entailer!.
+    rewrite Zlength_map.
+    rewrite sublist_same.
+    entailer!.
+    + reflexivity.
+    + reflexivity.
+Admitted.
 
 (*
 Lemma body_solve :
