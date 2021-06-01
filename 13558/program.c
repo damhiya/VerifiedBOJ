@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#define M 30000
+#define M 30
 
 void zeroing(unsigned int * const xs, const size_t n) {
   for (size_t i=0; i<n; i++)

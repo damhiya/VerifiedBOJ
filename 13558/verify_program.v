@@ -73,6 +73,8 @@ Definition flipped_inner_product_spec : ident * funspec :=
         data_at ys_sh (tarray tuint size) (map (Vint oo Int.repr) ys) ys_ptr
       ).
 
+Definition m : Z := 30.
+
 Definition solve_spec : ident * funspec :=
   DECLARE _solve
     WITH seq_sh : share, seq_ptr : val, seq : list Z, size : Z
@@ -80,7 +82,7 @@ Definition solve_spec : ident * funspec :=
       PROP (
         readable_share seq_sh;
         0 <= size <= Int.max_unsigned;
-        Forall (fun x => 1 <= x <= 30000) seq
+        Forall (fun x => 1 <= x <= m) seq
       )
       PARAMS (seq_ptr; Vlong (Int64.repr size))
       SEP (
@@ -96,9 +98,88 @@ Definition solve_spec : ident * funspec :=
 Definition Gprog : funspecs := [ zeroing_spec; count_frequency_spec; flipped_inner_product_spec; solve_spec ].
 
 Ltac range_solve :=
-  unfold Int.max_unsigned, Int.modulus;
+  unfold Int.max_unsigned, Int.min_signed, Int.max_signed, Int.modulus;
   simpl;
   try lia.
+
+Lemma body_solve :
+  semax_body Vprog Gprog f_solve solve_spec.
+Proof.
+  start_function.
+  forward_call (Tsh, v_counti, m).
+  1: (split; [auto | computable ]).
+  forward_call (Tsh, v_countk, m).
+  1: split; [auto | computable].
+  forward_call (Tsh, v_countk, seq_sh, seq_ptr, seq, size, 1, m+1).
+  - split3.
+    + auto.
+    + auto.
+    + unfold m in *.
+      repeat split; try lia.
+      eapply (Forall_impl (fun x => 1 <= x < m+1)).
+      2: apply H0.
+      intros.
+      simpl in H1.
+      unfold m.
+      lia.
+  - forward.
+    forward_for_simple_bound size (
+      EX i : Z,
+        PROP ()
+        LOCAL (
+          temp _result (Vlong (Int64.repr 0));
+          lvar _counti (tarray tuint m) v_counti;
+          lvar _countk (tarray tuint m) v_countk;
+          temp _seq seq_ptr;
+          temp _n (Vlong (Int64.repr size))
+        )
+        SEP (
+          data_at Tsh (tarray tuint m) (list_repeat (Z.to_nat m) (Vint (Int.repr 0))) v_counti;
+          data_at Tsh (tarray tuint m) (map (Vint oo Int.repr) (count_frequency seq 1 (m+1))) v_countk;
+          data_at seq_sh (tarray tushort size) (map (Vint oo Int.repr) seq) seq_ptr
+        )).
+    + entailer!.
+    + assert_PROP (0 <= i < Zlength seq).
+      { entailer!.
+        rewrite Zlength_map in *.
+        assumption.
+      }
+      forward.
+      { entailer!.
+        assert (1 <= Znth i seq <= m)
+          by (apply Forall_Znth; assumption).
+        unfold m in *.
+        rewrite Int.unsigned_repr; range_solve.
+      }
+      forward.
+      assert_PROP (Zlength (count_frequency seq 1 (m+1)) = m).
+      { entailer!.
+        apply Zlength_count_frequency.
+        unfold m; lia.
+        eapply Forall_impl.
+        2: apply H0.
+        intros.
+        unfold m in *.
+        lia.
+      }
+      assert_PROP (1 <= Znth i seq <= m).
+      { entailer!.
+        apply Forall_Znth.
+        assumption.
+        lia.
+      }
+      assert_PROP (0 <= Int.signed (Int.sub (Int.zero_ext 16 (Int.repr (Znth i seq))) (Int.repr 1))
+                     < Zlength (count_frequency seq 1 (m + 1))).
+      { entailer!.
+        rewrite H3.
+        rewrite Int.signed_repr.
+        lia.
+        unfold m in *.
+        range_solve.
+      }
+      forward.
+      forward.
+Admitted.
 
 Lemma body_zeroing :
   semax_body Vprog Gprog f_zeroing zeroing_spec.
@@ -201,28 +282,6 @@ Proof.
     + reflexivity.
     + reflexivity.
 Qed.
-
-Lemma body_solve :
-  semax_body Vprog Gprog f_solve solve_spec.
-Proof.
-  start_function.
-  forward_call (Tsh, v_counti, 30000).
-  1: (split; [auto | computable ]).
-  forward_call (Tsh, v_countk, 30000).
-  1: split; [auto | computable].
-  forward_call (Tsh, v_countk, seq_sh, seq_ptr, seq, size, 1, 30001).
-  - split3.
-    + auto.
-    + auto.
-    + repeat split; try lia.
-      Search Forall.
-      eapply (Forall_impl (fun x => 1 <= x < 30001)).
-      2: apply H0.
-      intros.
-      simpl in H1.
-      lia.
-  - forward.
-Admitted.
 
 Lemma body_flipped_inner_product :
   semax_body Vprog Gprog f_flipped_inner_product flipped_inner_product_spec.

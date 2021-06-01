@@ -242,8 +242,8 @@ Definition f_solve := {|
   fn_return := tulong;
   fn_callconv := cc_default;
   fn_params := ((_seq, (tptr tushort)) :: (_n, tulong) :: nil);
-  fn_vars := ((_counti, (tarray tuint 30000)) ::
-              (_countk, (tarray tuint 30000)) :: nil);
+  fn_vars := ((_counti, (tarray tuint 30)) :: (_countk, (tarray tuint 30)) ::
+              nil);
   fn_temps := ((_result, tulong) :: (_j, tulong) :: (_vmin, tushort) ::
                (_vmax, tushort) :: (_vj, tushort) :: (_t'1, tulong) ::
                (_t'4, tushort) :: (_t'3, tuint) :: (_t'2, tuint) :: nil);
@@ -252,14 +252,14 @@ Definition f_solve := {|
   (Scall None
     (Evar _zeroing (Tfunction (Tcons (tptr tuint) (Tcons tulong Tnil)) tvoid
                      cc_default))
-    ((Evar _counti (tarray tuint 30000)) ::
-     (Econst_int (Int.repr 30000) tint) :: nil))
+    ((Evar _counti (tarray tuint 30)) :: (Econst_int (Int.repr 30) tint) ::
+     nil))
   (Ssequence
     (Scall None
       (Evar _zeroing (Tfunction (Tcons (tptr tuint) (Tcons tulong Tnil))
                        tvoid cc_default))
-      ((Evar _countk (tarray tuint 30000)) ::
-       (Econst_int (Int.repr 30000) tint) :: nil))
+      ((Evar _countk (tarray tuint 30)) :: (Econst_int (Int.repr 30) tint) ::
+       nil))
     (Ssequence
       (Scall None
         (Evar _count_frequency (Tfunction
@@ -267,7 +267,7 @@ Definition f_solve := {|
                                    (Tcons (tptr tushort)
                                      (Tcons tulong (Tcons tushort Tnil))))
                                  tvoid cc_default))
-        ((Evar _countk (tarray tuint 30000)) ::
+        ((Evar _countk (tarray tuint 30)) ::
          (Etempvar _seq (tptr tushort)) :: (Etempvar _n tulong) ::
          (Econst_int (Int.repr 1) tint) :: nil))
       (Ssequence
@@ -292,13 +292,13 @@ Definition f_solve := {|
                     (Ssequence
                       (Sset _t'3
                         (Ederef
-                          (Ebinop Oadd (Evar _countk (tarray tuint 30000))
+                          (Ebinop Oadd (Evar _countk (tarray tuint 30))
                             (Ebinop Osub (Etempvar _vj tushort)
                               (Econst_int (Int.repr 1) tint) tint)
                             (tptr tuint)) tuint))
                       (Sassign
                         (Ederef
-                          (Ebinop Oadd (Evar _countk (tarray tuint 30000))
+                          (Ebinop Oadd (Evar _countk (tarray tuint 30))
                             (Ebinop Osub (Etempvar _vj tushort)
                               (Econst_int (Int.repr 1) tint) tint)
                             (tptr tuint)) tuint)
@@ -309,7 +309,7 @@ Definition f_solve := {|
                                      (Ebinop Omul
                                        (Econst_int (Int.repr 2) tint)
                                        (Etempvar _vj tushort) tint)
-                                     (Econst_int (Int.repr 30000) tint) tint)
+                                     (Econst_int (Int.repr 30) tint) tint)
                         (Ssequence
                           (Sset _vmin
                             (Ecast (Econst_int (Int.repr 1) tint) tushort))
@@ -325,11 +325,10 @@ Definition f_solve := {|
                               (Ebinop Osub
                                 (Ebinop Omul (Econst_int (Int.repr 2) tint)
                                   (Etempvar _vj tushort) tint)
-                                (Econst_int (Int.repr 30000) tint) tint)
+                                (Econst_int (Int.repr 30) tint) tint)
                               tushort))
                           (Sset _vmax
-                            (Ecast (Econst_int (Int.repr 30000) tint)
-                              tushort))))
+                            (Ecast (Econst_int (Int.repr 30) tint) tushort))))
                       (Ssequence
                         (Ssequence
                           (Scall (Some _t'1)
@@ -341,11 +340,11 @@ Definition f_solve := {|
                                                                (Tcons tulong
                                                                  Tnil)))
                                                            tulong cc_default))
-                            ((Ebinop Oadd (Evar _counti (tarray tuint 30000))
+                            ((Ebinop Oadd (Evar _counti (tarray tuint 30))
                                (Ebinop Osub (Etempvar _vmin tushort)
                                  (Econst_int (Int.repr 1) tint) tint)
                                (tptr tuint)) ::
-                             (Ebinop Oadd (Evar _countk (tarray tuint 30000))
+                             (Ebinop Oadd (Evar _countk (tarray tuint 30))
                                (Ebinop Osub (Etempvar _vmin tushort)
                                  (Econst_int (Int.repr 1) tint) tint)
                                (tptr tuint)) ::
@@ -359,15 +358,13 @@ Definition f_solve := {|
                         (Ssequence
                           (Sset _t'2
                             (Ederef
-                              (Ebinop Oadd
-                                (Evar _counti (tarray tuint 30000))
+                              (Ebinop Oadd (Evar _counti (tarray tuint 30))
                                 (Ebinop Osub (Etempvar _vj tushort)
                                   (Econst_int (Int.repr 1) tint) tint)
                                 (tptr tuint)) tuint))
                           (Sassign
                             (Ederef
-                              (Ebinop Oadd
-                                (Evar _counti (tarray tuint 30000))
+                              (Ebinop Oadd (Evar _counti (tarray tuint 30))
                                 (Ebinop Osub (Etempvar _vj tushort)
                                   (Econst_int (Int.repr 1) tint) tint)
                                 (tptr tuint)) tuint)
