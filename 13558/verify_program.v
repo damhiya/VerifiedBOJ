@@ -173,14 +173,34 @@ Proof.
       forward.
       forward.
       entailer!.
-      admit.
+      rewrite (sublist_split 0 i (i+1)); try lia.
+      rewrite count_frequency_app; try lia.
+      rewrite (sublist_one i (i+1)); try lia.
+      unfold count_frequency at 4.
+      simpl.
+      assert (Z.to_nat (b - a) = length (onehot a b (Znth i xs))).
+      { rewrite <- ZtoNat_Zlength.
+        rewrite Zlength_onehot.
+        lia.
+        assumption.
+      }
+      rewrite H15.
+      rewrite addvec_id_r.
+      rewrite <- addvec_onehot_r.
+      list_solve.
+      lia.
+      rewrite Zlength_count_frequency.
+      reflexivity.
+      lia.
+      apply Forall_sublist; assumption.
+      apply Forall_sublist; assumption.
   - entailer!.
     rewrite Zlength_map.
     rewrite sublist_same.
     entailer!.
     + reflexivity.
     + reflexivity.
-Admitted.
+Qed.
 
 (*
 Lemma body_solve :
