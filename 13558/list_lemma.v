@@ -129,6 +129,26 @@ Proof.
   reflexivity.
 Qed.
 
+Lemma addvec_assoc (xs ys zs : list Z) :
+  addvec xs (addvec ys zs) = addvec (addvec xs ys) zs.
+Proof.
+  revert zs.
+  revert ys.
+  induction xs.
+  - reflexivity.
+  - intros.
+    destruct ys, zs.
+    + reflexivity.
+    + reflexivity.
+    + reflexivity.
+    + unfold addvec, zip_with in *.
+      simpl in *.
+      rewrite IHxs.
+      assert (H : a + (z + z0) = (a + z) + z0) by lia.
+      rewrite H.
+      reflexivity.
+Qed.
+
 Lemma count_frequency_cons (a b x : Z) (xs : list Z) :
   count_frequency (x :: xs) a b = addvec (to_onehot a b x) (count_frequency xs a b).
 Proof.
@@ -150,4 +170,5 @@ Proof.
   - simpl.
     rewrite 2 count_frequency_cons.
     rewrite IHxs.
-Admitted.
+    apply addvec_assoc.
+Qed.
