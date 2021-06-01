@@ -202,7 +202,6 @@ Proof.
     + reflexivity.
 Qed.
 
-(*
 Lemma body_solve :
   semax_body Vprog Gprog f_solve solve_spec.
 Proof.
@@ -211,36 +210,19 @@ Proof.
   1: (split; [auto | computable ]).
   forward_call (Tsh, v_countk, 30000).
   1: split; [auto | computable].
-  forward_for_simple_bound size (
-    EX i : Z,
-      PROP ()
-      LOCAL (
-        lvar _counti (tarray tuint 30000) v_counti;
-        lvar _countk (tarray tuint 30000) v_countk;
-        temp _seq seq_ptr;
-        temp _n (Vlong (Int64.repr size))
-      )
-      SEP (
-        data_at Tsh (tarray tuint 30000) (list_repeat (Z.to_nat 30000) (Vint (Int.repr 0))) v_counti;
-        data_at Tsh (tarray tuint 30000) (list_repeat (Z.to_nat 30000) (Vint (Int.repr 0))) v_countk;
-        data_at seq_sh (tarray tushort size) (map (Vint oo Int.repr) seq) seq_ptr
-      )).
-  - entailer!.
-  - assert_PROP (0 <= i < Zlength seq).
-    1: entailer!; rewrite Zlength_map in H1; assumption.
-    forward.
-    { entailer!.
-      assert (1 <= Znth i seq <= 30000) by (apply Forall_Znth; assumption).
-      rewrite Int.unsigned_repr.
+  forward_call (Tsh, v_countk, seq_sh, seq_ptr, seq, size, 1, 30001).
+  - split3.
+    + auto.
+    + auto.
+    + repeat split; try lia.
+      Search Forall.
+      eapply (Forall_impl (fun x => 1 <= x < 30001)).
+      2: apply H0.
+      intros.
+      simpl in H1.
       lia.
-      unfold Int.max_unsigned, Int.modulus.
-      simpl.
-      lia.
-    }
-    forward.
-    assert_PROP (1 <= Znth i seq <= 30000).
-    1: entailer!; apply Forall_Znth; assumption.
-*)
+  - forward.
+Admitted.
 
 Lemma body_flipped_inner_product :
   semax_body Vprog Gprog f_flipped_inner_product flipped_inner_product_spec.
