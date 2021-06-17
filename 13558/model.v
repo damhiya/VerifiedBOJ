@@ -2,18 +2,52 @@ Require Import Coq.Lists.List.
 Require Import Coq.Vectors.Fin.
 Require Import Coq.Program.Basics.
 
+Import ListNotations.
 Import EqNotations.
 Local Open Scope program_scope.
 
 Fixpoint lookup {A : Type} (xs : list A) : Fin.t (length xs) -> A :=
   match xs with
-  | List.nil => Fin.case0 (fun _ => A)
+  | []=> Fin.case0 (fun _ => A)
   | x :: xs => fun i =>
     match i in Fin.t (S n) return n = length xs -> A with
     | F1 => const x
     | FS j => fun H => lookup xs (rew H in j)
     end eq_refl
   end.
+
+Fixpoint take {A : Type} (xs : list A) : Fin.t (S (length xs)) -> list A :=
+  match xs with
+  | [] => const []
+  | x :: xs => fun i =>
+    match i in Fin.t (S n) return n = S (length xs) -> list A with
+    | F1 => const []
+    | FS j => fun H => x :: take xs (rew H in j)
+    end eq_refl
+  end.
+
+Fixpoint drop {A : Type} (xs : list A) : Fin.t (S (length xs)) -> list A :=
+  match xs with
+  | [] => const []
+  | x :: xs => fun i =>
+    match i in Fin.t (S n) return n = S (length xs) -> list A with
+    | F1 => const (x :: xs)
+    | FS j => fun H => drop xs (rew H in j)
+    end eq_refl
+  end.
+
+Fixpoint inject1 {n : nat} : Fin.t n -> Fin.t (S n) :=
+  match n return Fin.t n -> Fin.t (S n) with
+  | 0 => Fin.case0 _
+  | S n => fun i =>
+    match i in Fin.t (S m) return m = n -> Fin.t (S (S n)) with
+    | F1 => const F1
+    | FS j => fun H => FS (inject1 (rew H in j))
+    end eq_refl
+  end.
+
+Definition trisect {A : Type} (xs : list A) (i : Fin.t (length xs)) : list A * A * list A :=
+  (take xs (inject1 i), lookup xs i , drop xs (FS i)).
 
 Require Import Coq.ZArith.ZArith.
 Definition toNat {n : nat} : Fin.t n -> nat := fun x => proj1_sig (Fin.to_nat x).
@@ -53,6 +87,3 @@ Definition toZ {n : nat} : Fin.t n -> Z := fun x => Z.of_nat (proj1_sig (Fin.to_
 Local Open Scope Z_scope.
 Definition distribution (xs : list Z) (a b : Z) (H : a <= b) : VectorDef.t nat (Z.to_nat (b - a)) :=
   tabulate (fun i : Fin.t (Z.to_nat (b-a)) => count (a + toZ i) xs).
-
-Definition trisect {A : Type} (xs : list A) (i : Fin.t (length xs)) : list A * A * list A :=
-  (firstn (toNat i) xs , lookup xs i , skipn (S (toNat i)) xs).
