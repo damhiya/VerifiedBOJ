@@ -40,18 +40,16 @@ Module List.
       end eq_refl
     end.
 
-  Theorem Forall_lookup {A : Type} {P : A -> Prop} {xs : list A} : Forall P xs -> forall i, P (lookup xs i).
+  Lemma Forall_lookup {A : Type} {P : A -> Prop} {xs : list A} (H : Forall P xs) : forall i, P (lookup xs i).
   Proof.
-    induction xs.
+    induction H.
     - intros.
       inversion i.
     - intros.
-      dependent destruction H.
-      dependent destruction i.
+      apply (Fin.caseS' i).
       + apply H.
-      + apply IHxs.
-        apply H0.
-  Qed.
+      + apply IHForall.
+  Defined.
 
 End List.
 
