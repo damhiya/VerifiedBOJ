@@ -1,5 +1,4 @@
 Require Import Coq.Program.Basics.
-Require Import Coq.Program.Equality.
 Require Import Coq.Vectors.Fin.
 Require Import Coq.ZArith.ZArith.
 Require Import Coq.Lists.List.
@@ -8,109 +7,109 @@ Import EqNotations.
 Local Open Scope program_scope.
 
 Module List.
-  Import ListNotations.
-  
-  Fixpoint lookup {A : Type} (xs : list A) : Fin.t (length xs) -> A :=
-    match xs with
-    | [] => Fin.case0 (fun _ => A)
-    | x :: xs => fun i =>
-      match i in Fin.t (S n) return n = length xs -> A with
-      | F1 => const x
-      | FS j => fun H => lookup xs (rew H in j)
-      end eq_refl
-    end.
-  
-  Fixpoint take {A : Type} (xs : list A) : Fin.t (S (length xs)) -> list A :=
-    match xs with
-    | [] => const []
-    | x :: xs => fun i =>
-      match i in Fin.t (S n) return n = S (length xs) -> list A with
-      | F1 => const []
-      | FS j => fun H => x :: take xs (rew H in j)
-      end eq_refl
-    end.
-  
-  Fixpoint drop {A : Type} (xs : list A) : Fin.t (S (length xs)) -> list A :=
-    match xs with
-    | [] => const []
-    | x :: xs => fun i =>
-      match i in Fin.t (S n) return n = S (length xs) -> list A with
-      | F1 => const (x :: xs)
-      | FS j => fun H => drop xs (rew H in j)
-      end eq_refl
-    end.
+Import ListNotations.
 
-  Lemma Forall_lookup {A : Type} {P : A -> Prop} {xs : list A} (H : Forall P xs) : forall i, P (lookup xs i).
-  Proof.
-    induction H.
-    - intros.
-      inversion i.
-    - intros.
-      apply (Fin.caseS' i).
-      + apply H.
-      + apply IHForall.
-  Defined.
+Fixpoint lookup {A : Type} (xs : list A) : Fin.t (length xs) -> A :=
+  match xs with
+  | [] => Fin.case0 (fun _ => A)
+  | x :: xs => fun i =>
+    match i in Fin.t (S n) return n = length xs -> A with
+    | F1 => const x
+    | FS j => fun H => lookup xs (rew H in j)
+    end eq_refl
+  end.
+
+Fixpoint take {A : Type} (xs : list A) : Fin.t (S (length xs)) -> list A :=
+  match xs with
+  | [] => const []
+  | x :: xs => fun i =>
+    match i in Fin.t (S n) return n = S (length xs) -> list A with
+    | F1 => const []
+    | FS j => fun H => x :: take xs (rew H in j)
+    end eq_refl
+  end.
+
+Fixpoint drop {A : Type} (xs : list A) : Fin.t (S (length xs)) -> list A :=
+  match xs with
+  | [] => const []
+  | x :: xs => fun i =>
+    match i in Fin.t (S n) return n = S (length xs) -> list A with
+    | F1 => const (x :: xs)
+    | FS j => fun H => drop xs (rew H in j)
+    end eq_refl
+  end.
+
+Lemma Forall_lookup {A : Type} {P : A -> Prop} {xs : list A} (H : Forall P xs) : forall i, P (lookup xs i).
+Proof.
+  induction H.
+  - intros.
+    inversion i.
+  - intros.
+    apply (Fin.caseS' i).
+    + apply H.
+    + apply IHForall.
+Defined.
 
 End List.
 
 Module Vector.
-  Import VectorDef.
-  Import VectorNotations.
+Import VectorDef.
+Import VectorNotations.
 
-  Fixpoint take {A : Type} (m : nat) {n : nat} : VectorDef.t A (m+n) -> VectorDef.t A m :=
-    match m return VectorDef.t A (m + n) -> VectorDef.t A m with
-    | 0 => Basics.const []
-    | S m => fun xs =>
-      match xs in VectorDef.t _ l return l = S m + n -> VectorDef.t A (S m) with
-      | [] => fun H => False_rect _ (O_S _ H)
-      | x :: xs => fun H => x :: take m (rew eq_add_S _ _ H in xs)
-      end eq_refl
-    end.
-  
-  Fixpoint drop {A : Type} (m : nat) {n : nat} : VectorDef.t A (m+n) -> VectorDef.t A n :=
-    match m return VectorDef.t A (m + n) -> VectorDef.t A n with
-    | 0 => id
-    | S m => fun xs =>
-      match xs in VectorDef.t _ l return l = S m + n -> VectorDef.t A n with
-      | [] => fun H => False_rect _ (O_S _ H)
-      | x :: xs => fun H => drop m (rew eq_add_S _ _ H in xs)
-      end eq_refl
-    end.
+Fixpoint take {A : Type} (m : nat) {n : nat} : VectorDef.t A (m+n) -> VectorDef.t A m :=
+  match m return VectorDef.t A (m + n) -> VectorDef.t A m with
+  | 0 => Basics.const []
+  | S m => fun xs =>
+    match xs in VectorDef.t _ l return l = S m + n -> VectorDef.t A (S m) with
+    | [] => fun H => False_rect _ (O_S _ H)
+    | x :: xs => fun H => x :: take m (rew eq_add_S _ _ H in xs)
+    end eq_refl
+  end.
 
-  Fixpoint tabulate {A : Type} {n : nat} : (Fin.t n -> A) -> VectorDef.t A n :=
-    match n as m return m = n -> (Fin.t m -> A) -> VectorDef.t A n with
-    | 0 => fun H f => rew H in []
-    | S n' => fun H f => rew H in (f F1 :: tabulate (f ∘ FS))
-    end eq_refl.
+Fixpoint drop {A : Type} (m : nat) {n : nat} : VectorDef.t A (m+n) -> VectorDef.t A n :=
+  match m return VectorDef.t A (m + n) -> VectorDef.t A n with
+  | 0 => id
+  | S m => fun xs =>
+    match xs in VectorDef.t _ l return l = S m + n -> VectorDef.t A n with
+    | [] => fun H => False_rect _ (O_S _ H)
+    | x :: xs => fun H => drop m (rew eq_add_S _ _ H in xs)
+    end eq_refl
+  end.
 
-  Definition sum_nat {n : nat} : VectorDef.t nat n -> nat :=
-    fun xs => fold_right plus xs 0.
+Fixpoint tabulate {A : Type} {n : nat} : (Fin.t n -> A) -> VectorDef.t A n :=
+  match n as m return m = n -> (Fin.t m -> A) -> VectorDef.t A n with
+  | 0 => fun H f => rew H in []
+  | S n' => fun H f => rew H in (f F1 :: tabulate (f ∘ FS))
+  end eq_refl.
 
-  Definition inner_product {n : nat} : VectorDef.t nat n -> VectorDef.t nat n -> nat :=
-    fun xs ys => sum_nat (map2 mult xs ys).
+Definition sum_nat {n : nat} : VectorDef.t nat n -> nat :=
+  fun xs => fold_right plus xs 0.
+
+Definition inner_product {n : nat} : VectorDef.t nat n -> VectorDef.t nat n -> nat :=
+  fun xs ys => sum_nat (map2 mult xs ys).
 
 End Vector.
 
 Module Fin.
 
-  Fixpoint inject1 {n : nat} : Fin.t n -> Fin.t (S n) :=
-    match n return Fin.t n -> Fin.t (S n) with
-    | 0 => Fin.case0 _
-    | S n => fun i =>
-      match i in Fin.t (S m) return m = n -> Fin.t (S (S n)) with
-      | F1 => const F1
-      | FS j => fun H => FS (inject1 (rew H in j))
-      end eq_refl
-    end.
-  
-  Fixpoint sum_Fin {n : nat} : (Fin.t n -> nat) -> nat :=
-    match n with
-    | 0 => const 0
-    | S n => fun f => f F1 + sum_Fin (f ∘ FS)
-    end.
-  
-  Definition toNat {n : nat} : Fin.t n -> nat := fun x => proj1_sig (Fin.to_nat x).
-  
+Fixpoint inject1 {n : nat} : Fin.t n -> Fin.t (S n) :=
+  match n return Fin.t n -> Fin.t (S n) with
+  | 0 => Fin.case0 _
+  | S n => fun i =>
+    match i in Fin.t (S m) return m = n -> Fin.t (S (S n)) with
+    | F1 => const F1
+    | FS j => fun H => FS (inject1 (rew H in j))
+    end eq_refl
+  end.
+
+Fixpoint sum_Fin {n : nat} : (Fin.t n -> nat) -> nat :=
+  match n with
+  | 0 => const 0
+  | S n => fun f => f F1 + sum_Fin (f ∘ FS)
+  end.
+
+Definition toNat {n : nat} : Fin.t n -> nat := fun x => proj1_sig (Fin.to_nat x).
+
 End Fin.
 
 Import List.
